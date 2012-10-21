@@ -39,16 +39,20 @@ def get_packs(path):
         yield (paths, packsize)
 
 
-if len(sys.argv) != 2:
-    usage()
-    sys.exit(1)
+def main():
+    if len(sys.argv) != 2:
+        usage()
+        sys.exit(1)
 
-path = sys.argv[1]
-#TODO check if path exists
+    path = sys.argv[1]
+    #TODO check if path exists
 
-for index, pack in enumerate(get_packs(path)):
-    paths, packsize = pack
-    print "Pack %d (%dB)" % (index, packsize)
-    for path in paths:
-        print "  %s" % path
+    for index, pack in enumerate(get_packs(path)):
+        paths, packsize = pack
+        print "Pack %d (%dB)" % (index, packsize)
+        for path in paths:
+            print "  %s" % path
+
+if __name__ == "__main__":
+    main()
 
