@@ -1,7 +1,28 @@
 #!/usr/bin/env python
-import sys, os
+import sqlite3, sys, os
 
 MAX_PACKSIZE = 1024*1024*1024
+
+
+class Db:
+    """The database abstraction"""
+
+    CREATE = """CREATE TABLE IF NOT EXISTS
+    file (
+    name string,
+    pack number);"""
+
+    ADD = """INSERT INTO file VALUES (?, ?);"""
+
+    def __init__(self, path):
+        self._db = sqlite3.connect(path)
+        self._db.execute(self.CREATE)
+
+    def add(self, file, pack):
+        self._db.execute(self.ADD, (file, pack))
+
+    def commit(self):
+        self._db.commit()
 
 
 def usage():
@@ -44,14 +65,19 @@ def main():
         usage()
         sys.exit(1)
 
-    path = sys.argv[1]
+    PATH = sys.argv[1]
     #TODO check if path exists
 
-    for index, pack in enumerate(get_packs(path)):
+    db = Db(os.path.join(PATH, 'kurt.db'))
+
+    for index, pack in enumerate(get_packs(PATH)):
         paths, packsize = pack
         print "Pack %d (%dB)" % (index, packsize)
         for path in paths:
             print "  %s" % path
+            pathlen = len(PATH)
+            db.add(path[pathlen+1:], index)
+    db.commit()
 
 if __name__ == "__main__":
     main()
