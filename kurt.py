@@ -7,22 +7,35 @@ MAX_PACKSIZE = 1024*1024*1024
 class Db:
     """The database abstraction"""
 
-    CREATE = """CREATE TABLE IF NOT EXISTS
+    CREATE_FILE = """CREATE TABLE IF NOT EXISTS
     file (
     name string,
     pack number);"""
+    CREATE_META = """CREATE TABLE IF NOT EXISTS
+    meta (
+    name string,
+    key string,
+    value string);"""
 
-    ADD = """INSERT INTO file VALUES (?, ?);"""
+    ADD_FILE = """INSERT INTO file VALUES (?, ?);"""
+    ADD_META = """INSERT INTO meta VALUES (?, ?, ?);"""
 
     def __init__(self, path):
         self._db = sqlite3.connect(path)
-        self._db.execute(self.CREATE)
+        self._db.execute(self.CREATE_FILE)
+        self._db.execute(self.CREATE_META)
 
     def add(self, file, pack):
         try:
-            self._db.execute(self.ADD, (file, pack))
+            self._db.execute(self.ADD_FILE, (file, pack))
         except sqlite3.ProgrammingError:
             sys.stderr.write("Couldn't add %s\n" % file)
+
+    def add_meta(self, file, key, value):
+        try:
+            self._db.execute(self.ADD_META, (file, key, value))
+        except sqlite3.ProgrammingError:
+            sys.stderr.write("Couldn't add metadata for %s\n" % file)
 
     def commit(self):
         self._db.commit()
@@ -93,6 +106,12 @@ def main():
             print "  %s" % path
             pathlen = len(PATH)
             db.add(path[pathlen+1:], index)
+            try:
+                file_stats = os.stat(path)
+                file_size = file_stats.st_size
+                db.add_meta(path[pathlen+1:], "size", file_size)
+            except OSError:
+                pass
     db.commit()
 
 if __name__ == "__main__":
