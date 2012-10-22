@@ -16,6 +16,7 @@ class Db:
     name string,
     key string,
     value string);"""
+    SELECT_FILES = """SELECT name, pack FROM file;"""
 
     ADD_FILE = """INSERT INTO file VALUES (?, ?);"""
     ADD_META = """INSERT INTO meta VALUES (?, ?, ?);"""
@@ -36,6 +37,16 @@ class Db:
             self._db.execute(self.ADD_META, (file, key, value))
         except sqlite3.ProgrammingError:
             sys.stderr.write("Couldn't add metadata for %s\n" % file)
+
+    def get_files(self):
+        files = set()
+        maxpack = 0
+        cursor = self._db.execute(self.SELECT_FILES)
+        for name, pack in cursor.fetchall():
+            files.add(name)
+            if pack > maxpack:
+                maxpack = pack
+        return files, maxpack
 
     def commit(self):
         self._db.commit()
@@ -66,17 +77,20 @@ def get_files(path):
                 yield (file_path, file_size)
 
 
-def get_packs(path):
+def get_packs(path, known_files):
     singles = []
 
     packsize = 0
     paths = []
-    for path, size in get_files(path):
-        if packsize + size <= MAX_PACKSIZE:
-            paths.append(path)
-            packsize += size
-        elif size > MAX_PACKSIZE:
-            singles.append(([path], size))
+    for file_path, file_size in get_files(path):
+        if file_path[len(path)+1:] in known_files:
+            continue
+
+        if packsize + file_size <= MAX_PACKSIZE:
+            paths.append(file_path)
+            packsize += file_size
+        elif file_size > MAX_PACKSIZE:
+            singles.append(([file_path], file_size))
         else:
             yield (paths, packsize)
             packsize = 0
@@ -99,13 +113,15 @@ def main():
 
     db = Db(os.path.join(PATH, 'kurt.db'))
 
-    for index, pack in enumerate(get_packs(PATH)):
+    known_files, maxpack = db.get_files()
+
+    for index, pack in enumerate(get_packs(PATH, known_files)):
         paths, packsize = pack
-        print "Pack %d (%dB)" % (index, packsize)
+        print "Pack %d (%dB)" % (maxpack+index+1, packsize)
         for path in paths:
             print "  %s" % path
             pathlen = len(PATH)
-            db.add(path[pathlen+1:], index)
+            db.add(path[pathlen+1:], maxpack+index+1)
             try:
                 file_stats = os.stat(path)
                 file_size = file_stats.st_size
