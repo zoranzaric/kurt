@@ -40,9 +40,17 @@ def get_files(path):
         files = []
 
     for file in sorted(files):
-        file_path = os.path.join(path, file)
-        file_stats = os.stat(file_path)
-        yield (file_path, file_stats.st_size)
+        if os.path.isfile(os.path.join(path, file)):
+            file_path = os.path.join(path, file)
+            try:
+                file_stats = os.stat(file_path)
+                file_size = file_stats.st_size
+            except OSError:
+                file_size = 0
+            yield (file_path, file_size)
+        if os.path.isdir(os.path.join(path, file)):
+            for file_path, file_size in get_files(os.path.join(path, file)):
+                yield (file_path, file_size)
 
 
 def get_packs(path):
