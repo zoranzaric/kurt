@@ -19,7 +19,10 @@ class Db:
         self._db.execute(self.CREATE)
 
     def add(self, file, pack):
-        self._db.execute(self.ADD, (file, pack))
+        try:
+            self._db.execute(self.ADD, (file, pack))
+        except sqlite3.ProgrammingError:
+            sys.stderr.write("Couldn't add %s\n" % file)
 
     def commit(self):
         self._db.commit()
@@ -30,7 +33,12 @@ def usage():
 
 
 def get_files(path):
-    files = os.listdir(path)
+    try:
+        files = os.listdir(path)
+    except OSError:
+        sys.stderr.write("Couldn't traverse %s\n" % path)
+        files = []
+
     for file in sorted(files):
         file_path = os.path.join(path, file)
         file_stats = os.stat(file_path)
