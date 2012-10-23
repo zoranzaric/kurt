@@ -132,6 +132,8 @@ def main():
                 db.add_meta(path[pathlen+1:], "size", file_size)
             except OSError:
                 pass
+            except IOError:
+                pass
         z.close()
         f.close()
     db.commit()
