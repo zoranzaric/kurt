@@ -1,7 +1,15 @@
 #!/usr/bin/env python
 import sqlite3, sys, os, zipfile
+import options
 
 MAX_PACKSIZE = 1024*1024*1024
+
+OPTSPEC = """
+kurt.py [options] <path>
+--
+ Options:
+v,verbose increase log output (can be used more than once)
+"""
 
 
 class Db:
@@ -104,12 +112,16 @@ def get_packs(path, known_files):
 
 
 def main():
-    if len(sys.argv) != 2:
-        usage()
-        sys.exit(1)
+    o = options.Options(OPTSPEC)
+    (opt, flags, extra) = o.parse(sys.argv[1:])
 
-    PATH = sys.argv[1]
-    #TODO check if path exists
+    if not extra:
+        o.fatal('no path given')
+
+    PATH = extra[0]
+    if not os.path.exists(PATH):
+        o.fatal('path <%s> does not exist' % PATH)
+
 
     db = Db('kurt.db')
 
@@ -120,9 +132,11 @@ def main():
         f = open(zipname, 'wb')
         z = zipfile.ZipFile(f, 'w')
         paths, packsize = pack
-        print "Pack %d (%dB)" % (maxpack+index+1, packsize)
+        if opt.verbose:
+            print "Pack %d (%dB)" % (maxpack+index+1, packsize)
         for path in paths:
-            print "  %s" % path
+            if opt.verbose:
+                print "  %s" % path
             pathlen = len(PATH)
             try:
                 z.write(path, path[pathlen+1:])
