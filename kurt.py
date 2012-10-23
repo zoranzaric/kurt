@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import sqlite3, sys, os
+import sqlite3, sys, os, zipfile
 
 MAX_PACKSIZE = 1024*1024*1024
 
@@ -116,18 +116,24 @@ def main():
     known_files, maxpack = db.get_files()
 
     for index, pack in enumerate(get_packs(PATH, known_files)):
+        zipname = "pack%04d.zip" % index
+        f = open(zipname, 'wb')
+        z = zipfile.ZipFile(f, 'w')
         paths, packsize = pack
         print "Pack %d (%dB)" % (maxpack+index+1, packsize)
         for path in paths:
             print "  %s" % path
             pathlen = len(PATH)
-            db.add(path[pathlen+1:], maxpack+index+1)
             try:
+                z.write(path, path[pathlen+1:])
+                db.add(path[pathlen+1:], maxpack+index+1)
                 file_stats = os.stat(path)
                 file_size = file_stats.st_size
                 db.add_meta(path[pathlen+1:], "size", file_size)
             except OSError:
                 pass
+        z.close()
+        f.close()
     db.commit()
 
 if __name__ == "__main__":
