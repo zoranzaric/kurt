@@ -8,6 +8,7 @@ OPTSPEC = """
 kurt.py [options] <path>
 --
  Options:
+o,output= path to the output directory
 v,verbose increase log output (can be used more than once)
 """
 
@@ -122,15 +123,27 @@ def main():
     if not os.path.exists(PATH):
         o.fatal('path <%s> does not exist' % PATH)
 
+    if opt.output and not os.path.exists(opt.output):
+        o.fata('output-path <%s> does not exist' % opt.output)
 
-    db = Db('kurt.db')
+    if opt.output:
+        metapath = os.path.join(opt.output, 'meta')
+    else:
+        metapath = 'meta'
+
+    db = Db(os.path.join(metapath, 'kurt.db'))
 
     known_files, maxpack = db.get_files()
 
     for index, pack in enumerate(get_packs(PATH, known_files)):
         zipname = "pack%04d.zip" % index
-        f = open(zipname, 'wb')
+        if opt.output:
+            zippath = os.path.join(opt.output, zipname)
+        else:
+            zippath = zipname
+        f = open(zippath, 'wb')
         z = zipfile.ZipFile(f, 'w')
+
         paths, packsize = pack
         if opt.verbose:
             print "Pack %d (%dB)" % (maxpack+index+1, packsize)
@@ -148,6 +161,7 @@ def main():
                 pass
             except IOError:
                 pass
+
         z.close()
         f.close()
     db.commit()
