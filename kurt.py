@@ -111,7 +111,7 @@ def main():
     PATH = sys.argv[1]
     #TODO check if path exists
 
-    db = Db(os.path.join(PATH, 'kurt.db'))
+    db = Db('kurt.db')
 
     known_files, maxpack = db.get_files()
 
