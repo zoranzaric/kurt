@@ -61,10 +61,6 @@ class Db:
         self._db.commit()
 
 
-def usage():
-    sys.stderr.write("usage: kurt.py <path>\n")
-
-
 def get_files(path):
     try:
         files = os.listdir(path)
