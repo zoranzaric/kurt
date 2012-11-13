@@ -6,7 +6,7 @@ from db import Db
 MAX_PACKSIZE = 1024*1024*1024
 
 OPTSPEC = """
-kurt.py [options] <path>
+kurt [options] <path>
 --
  Options:
 o,output= path to the output directory
