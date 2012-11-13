@@ -79,6 +79,8 @@ def main():
         metapath = os.path.join(opt.output, 'meta')
     else:
         metapath = 'meta'
+    if not os.path.exists(metapath):
+        os.makedirs(metapath)
 
     db = Db(os.path.join(metapath, 'kurt.db'))
 
