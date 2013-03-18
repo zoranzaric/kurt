@@ -53,7 +53,7 @@ def main():
         o.fatal('path <%s> does not exist' % PATH)
 
     if opt.output and not os.path.exists(opt.output):
-        o.fata('output-path <%s> does not exist' % opt.output)
+        o.fatal('output-path <%s> does not exist' % opt.output)
 
     if opt.output:
         metapath = os.path.join(opt.output, 'meta')
