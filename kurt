@@ -1,10 +1,12 @@
 #!/usr/bin/env python
-import sys, os, tarfile
+import sys, os, tarfile, subprocess, shlex
 from lib import options
 from lib.db import Db
 from lib.kurt import *
 
 MAX_PACKSIZE = 1024*1024*1024
+
+GPG_COMMAND = "gpg -c --no-tty --passphrase PASSPHRASE --s2k-mode 3 --s2k-count 65011712 --batch --compress-algo none"
 
 OPTSPEC = """
 kurt [options] <path>
@@ -67,13 +69,16 @@ def main():
     known_files, maxpack = db.get_files()
 
     for index, pack in enumerate(get_packs(PATH, known_files)):
-        packname = "pack%04d.tar.gz" % index
+        packname = "pack%04d.tar.gz.gpg" % index
         if opt.output:
             packpath = os.path.join(opt.output, packname)
         else:
             packpath = packname
         f = open(packpath, 'wb')
-        t = tarfile.open(fileobj=f, mode='w:gz')
+        p = subprocess.Popen(shlex.split(GPG_COMMAND),
+                             stdin=subprocess.PIPE,
+                             stdout=f)
+        t = tarfile.open(fileobj=p.stdin, mode='w:gz')
 
         paths, packsize = pack
         if opt.verbose:
@@ -96,6 +101,9 @@ def main():
                 pass
 
         t.close()
+        p.stdin.flush()
+        p.stdin.close()
+        p.wait()
         f.close()
     db.commit()
 
