@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import sys, os, zipfile
+import sys, os, tarfile
 from lib import options
 from lib.db import Db
 from lib.kurt import *
@@ -67,13 +67,13 @@ def main():
     known_files, maxpack = db.get_files()
 
     for index, pack in enumerate(get_packs(PATH, known_files)):
-        zipname = "pack%04d.zip" % index
+        packname = "pack%04d.tar.gz" % index
         if opt.output:
-            zippath = os.path.join(opt.output, zipname)
+            packpath = os.path.join(opt.output, packname)
         else:
-            zippath = zipname
-        f = open(zippath, 'wb')
-        z = zipfile.ZipFile(f, 'w')
+            packpath = packname
+        f = open(packpath, 'wb')
+        t = tarfile.open(fileobj=f, mode='w:gz')
 
         paths, packsize = pack
         if opt.verbose:
@@ -83,7 +83,9 @@ def main():
                 print "  %s" % path
             pathlen = len(PATH)
             try:
-                z.write(path, path[pathlen+1:])
+                tarinfo = t.gettarinfo(path)
+                tarinfo.name = path[pathlen+1:]
+                t.addfile(tarinfo, file(path))
                 db.add(path[pathlen+1:], maxpack+index+1)
                 file_stats = os.stat(path)
                 file_size = file_stats.st_size
@@ -93,7 +95,7 @@ def main():
             except IOError:
                 pass
 
-        z.close()
+        t.close()
         f.close()
     db.commit()
 
